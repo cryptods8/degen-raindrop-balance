@@ -108,6 +108,12 @@ export const POST = frames(async (ctx) => {
     const [totalBalance, usedBalance] = await Promise.all(promises);
     const remaining = totalBalance - usedBalance;
 
+    if (totalBalance === 0 && usedBalance === 0) {
+      return Response.json({
+        message: "No RainDrop balance",
+      });
+    }
+
     return Response.json({
       message: `${remaining >= 0 ? "✅" : "❌"} ${remaining.toLocaleString(
         "en"
