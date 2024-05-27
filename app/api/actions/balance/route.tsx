@@ -106,9 +106,10 @@ export const POST = frames(async (ctx) => {
       getAllRaindropsUsedFromDb(fid),
     ];
     const [totalBalance, usedBalance] = await Promise.all(promises);
+    const remaining = totalBalance - usedBalance;
 
     return Response.json({
-      message: `${(totalBalance - usedBalance).toLocaleString(
+      message: `${remaining >= 0 ? "✅" : "❌"} ${remaining.toLocaleString(
         "en"
       )}/${totalBalance.toLocaleString("en")} $DEGEN`,
     });
