@@ -2,6 +2,7 @@ import { baseUrl } from "@/app/constants";
 import { frames } from "@/app/frames/frames";
 import { ActionMetadata, getAddressesForFid } from "frames.js";
 import { fetchQuery, init } from "@airstack/node";
+import { pgDb } from "@/app/db/pg-db";
 
 export const GET = async () => {
   const actionMetadata: ActionMetadata = {
@@ -53,6 +54,20 @@ async function fetchTokenTransfers(addresses: string[]) {
   return transfers;
 }
 
+async function getAllRaindropsUsedFromDb(fid: number): Promise<number> {
+  try {
+    const res = await pgDb
+      .selectFrom("degen_raindrop")
+      .where("fromFid", "=", fid.toString())
+      .select((db) => db.fn.sum("value").as("total"))
+      .executeTakeFirst();
+    return Number(res?.total) || 0;
+  } catch (e) {
+    console.error(e);
+  }
+  return 0;
+}
+
 async function checkBalance(addresses: string[]): Promise<number> {
   console.log("Checking balance for", addresses);
   try {
@@ -86,10 +101,16 @@ export const POST = frames(async (ctx) => {
       .filter((a) => a.type === "verified")
       .map((a) => a.address);
 
-    const totalBalance = await checkBalance(verifiedAddresses);
+    const promises = [
+      checkBalance(verifiedAddresses),
+      getAllRaindropsUsedFromDb(fid),
+    ];
+    const [totalBalance, usedBalance] = await Promise.all(promises);
 
     return Response.json({
-      message: `RainDrop balance: ${totalBalance.toLocaleString("en")} $DEGEN`,
+      message: `${(totalBalance - usedBalance).toLocaleString(
+        "en"
+      )}/${totalBalance.toLocaleString("en")} $DEGEN`,
     });
   } catch (e) {
     console.error(e);
