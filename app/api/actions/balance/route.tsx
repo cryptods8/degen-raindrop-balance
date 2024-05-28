@@ -57,9 +57,15 @@ async function fetchTokenTransfers(addresses: string[]) {
 async function getAllRaindropsUsedFromDb(fid: number): Promise<number> {
   try {
     const res = await pgDb
-      .selectFrom("degen_raindrop")
-      .where("fromFid", "=", fid.toString())
-      .select((db) => db.fn.sum("value").as("total"))
+      .selectFrom((db) =>
+        db
+          .selectFrom("degen_raindrop")
+          .where("fromFid", "=", fid.toString())
+          .select((db) => db.fn.max("value").as("value"))
+          .groupBy("castHash")
+          .as("udr")
+      )
+      .select((db) => db.fn.sum("udr.value").as("total"))
       .executeTakeFirst();
     return Number(res?.total) || 0;
   } catch (e) {
