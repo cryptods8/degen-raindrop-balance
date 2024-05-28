@@ -83,6 +83,10 @@ async function checkBalance(addresses: string[]): Promise<number> {
   }
 }
 
+function fmtNum(num: number) {
+  return num.toLocaleString("en");
+}
+
 export const POST = frames(async (ctx) => {
   const fid = ctx.message?.castId?.fid;
   if (!fid) {
@@ -106,7 +110,8 @@ export const POST = frames(async (ctx) => {
       getAllRaindropsUsedFromDb(fid),
     ];
     const [totalBalance, usedBalance] = await Promise.all(promises);
-    const remaining = totalBalance - usedBalance;
+    const totalBalanceAfterFees = totalBalance * 0.98;
+    const remaining = totalBalanceAfterFees - usedBalance;
 
     if (totalBalance === 0 && usedBalance === 0) {
       return Response.json({
@@ -115,15 +120,15 @@ export const POST = frames(async (ctx) => {
     }
 
     return Response.json({
-      message: `${remaining >= 0 ? "✅" : "❌"} ${remaining.toLocaleString(
-        "en"
-      )}/${totalBalance.toLocaleString("en")} $DEGEN`,
+      message: `${remaining >= 0 ? "✅" : "❌"} ${fmtNum(remaining)} / ${fmtNum(
+        totalBalanceAfterFees
+      )} $DEGEN`,
     });
   } catch (e) {
     console.error(e);
     return Response.json(
       {
-        message: "Couldn't find valid info :(",
+        message: "Failed to find valid info :(",
       },
       { status: 400 }
     );
