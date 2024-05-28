@@ -84,7 +84,7 @@ async function checkBalance(addresses: string[]): Promise<number> {
 }
 
 function fmtNum(num: number) {
-  return num.toLocaleString("en");
+  return Math.round(num).toLocaleString("en");
 }
 
 export const POST = frames(async (ctx) => {
